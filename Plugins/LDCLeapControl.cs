@@ -46,6 +46,10 @@ public static class LDCLeapControl
 				{
 					_hand = _frame.Hands[0];
 				}
+				if(_frame.Fingers.Count > 0)
+				{
+					_fingerNum = _frame.Fingers.Count;
+				}
 			}
 		}
 	}
@@ -71,10 +75,36 @@ public static class LDCLeapControl
 			PalmNormal = _hand.PalmNormal.ToUnity();
 			PalmDirection = _hand.PalmPosition.ToUnity();
 			
-			if(gesture == "Rotation")
+			switch(gesture)
 			{
+			case "Horizontal":
+				leapData = PalmPosition.x;
+				break;
+			case "Vertical":
+				leapData = PalmPosition.y;
+				break;
+			case "Depth":
+				leapData = PalmPosition.z;
+				break;
+			case "Rotation":
 				leapData = -ROTATE_MOD * PalmNormal.x;
+				break;
+			case "Tilt":
+				leapData = PalmNormal.z;
+				break;
+			case "HorizontalDirection":
+				leapData = PalmDirection.x;
+				break;
+			case "VerticalDirection":
+				leapData = PalmDirection.y;
+				break;
+			default:
+				break;
 			}
+		}
+		else
+		{
+			//switch to keyboard & mouse input
 		}
 		return leapData;
 	}
