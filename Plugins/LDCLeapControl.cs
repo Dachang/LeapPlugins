@@ -52,7 +52,7 @@ public static class LDCLeapControl
 	
 	public static float getHandInput(string gesture)
 	{
-		float leapData = getLeapData(gesture);
+		float leapData = getLeapHand(gesture);
 		return leapData;
 	}
 	
@@ -62,8 +62,8 @@ public static class LDCLeapControl
 		return leapGestureData;
 	}
 	
-	//private interfaces
-	private static float getLeapData(string movement)
+	//private methods
+	private static float getLeapHand(string movement)
 	{
 		Update();
 		float leapData = 0.0F;
@@ -129,18 +129,39 @@ public static class LDCLeapControl
 			{
 			case Gesture.GestureType.TYPECIRCLE:
 				CircleGesture circle = new CircleGesture (gesture);
-				Debug.Log("Circle Gesture");
+				gestureData = circle.Progress;
+				string clockwiseness;
+				if (circle.Pointable.Direction.AngleTo (circle.Normal) <= Mathf.PI / 4) 
+				{ 
+					clockwiseness = "clockwise";
+					Debug.Log("Clockwise Circle Gesture");
+				}
+				else 
+				{ 
+					clockwiseness = "counter clockwise"; 
+					Debug.Log("Counter Clockwise Circle Gesture");
+				}
 				break;
 			case Gesture.GestureType.TYPESWIPE:
 				SwipeGesture swipe = new SwipeGesture (gesture);
-				Debug.Log("Swipe Gesture");
+				Vector3 swipeDirection = new Vector3(0,0,0);
+				swipeDirection = swipe.Direction.ToUnity();
+				gestureData = swipeDirection.x;
+				if (gestureData < 0) { Debug.Log ("Left Swipe Gesture"); }
+				else if (gestureData > 0) { Debug.Log ("Right Swipe Gesture"); }
 				break;
 			case Gesture.GestureType.TYPEKEYTAP:
 				KeyTapGesture keyTap = new KeyTapGesture (gesture);
+				Vector3 keyTapPosition = new Vector3(0,0,0);
+				keyTapPosition = keyTap.Position.ToUnity();
+				gestureData = keyTapPosition.x;
 				Debug.Log("Key Type Gesture");
 				break;
 			case Gesture.GestureType.TYPESCREENTAP:
 				ScreenTapGesture screenTap = new ScreenTapGesture (gesture);
+				Vector3 screenTapPostion = new Vector3(0,0,0);
+				screenTapPostion = screenTap.Position.ToUnityTranslated();
+				gestureData = screenTapPostion.x;
 				Debug.Log("Screen Tap Gesture");
 				break;
 			default:
