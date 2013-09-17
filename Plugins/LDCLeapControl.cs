@@ -1,3 +1,5 @@
+/******This is a Singleton created to emulate several common inputs from leap for unity3D******/
+/**************************https://github.com/Dachang/LeapPlugins******************************/
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,6 +8,11 @@ using Leap;
 public static class LDCLeapControl
 {
 	public static float ROTATE_MOD = 3.14F;
+	public static float TOUCH_DISTANCE;
+	public static float TOUCH_POSITION_X;
+	public static float TOUCH_POSITION_Y;
+	private static int WINDOW_HEIGHT = UnityEngine.Screen.height;
+	private static int WINDOW_WIDTH = UnityEngine.Screen.width;	
 	
 	//member variables;
 	static Leap.Controller _controller;
@@ -13,7 +20,7 @@ public static class LDCLeapControl
 	static Leap.Hand _hand;
 	static Leap.Gesture _gesture;
 	static int _fingerNum = 0;
-	
+	//construct leap controller
 	static LDCLeapControl()
 	{
 		_controller = new Leap.Controller();
@@ -49,19 +56,22 @@ public static class LDCLeapControl
 			}
 		}
 	}
-	
+	//return hand infos retrieved from leap
 	public static float getHandInput(string gesture)
 	{
 		float leapData = getLeapHand(gesture);
 		return leapData;
 	}
-	
+	//return gesture infos retrieved from leap
 	public static float getGestureInput()
 	{
 		float leapGestureData = getLeapGesture();
 		return leapGestureData;
 	}
-	
+	public static void getTouchPoint()
+	{
+		touchEmulation();
+	}
 	//private methods
 	private static float getLeapHand(string movement)
 	{
@@ -79,24 +89,31 @@ public static class LDCLeapControl
 			
 			switch(movement)
 			{
+				//movement on x axis (left and right)
 			case "Horizontal":
 				leapData = PalmPosition.x;
 				break;
+				//movement on y axis (up and down)
 			case "Vertical":
 				leapData = PalmPosition.y;
 				break;
+				//movement on z axis (depth)
 			case "Depth":
 				leapData = PalmPosition.z;
 				break;
+				//rotate the wrist (horizontal)
 			case "Rotation":
 				leapData = -ROTATE_MOD * PalmNormal.x;
 				break;
+				//tilt the wrist (vertical)
 			case "Tilt":
 				leapData = PalmNormal.z;
 				break;
+				//horizontal direction of palm
 			case "HorizontalDirection":
 				leapData = PalmDirection.x;
 				break;
+				//vertical direction of palm
 			case "VerticalDirection":
 				leapData = PalmDirection.y;
 				break;
@@ -115,7 +132,7 @@ public static class LDCLeapControl
 	{
 		Update();
 		float gestureData = 0.0F;
-		//enabled gesture
+		//enabled gestures
 		_controller.EnableGesture(Gesture.GestureType.TYPECIRCLE);
 		_controller.EnableGesture(Gesture.GestureType.TYPESWIPE);
 		_controller.EnableGesture(Gesture.GestureType.TYPEKEYTAP);
@@ -127,10 +144,12 @@ public static class LDCLeapControl
 			Gesture gesture = gestureList[i];
 			switch(gesture.Type)
 			{
+				//CIRCLE
 			case Gesture.GestureType.TYPECIRCLE:
 				CircleGesture circle = new CircleGesture (gesture);
 				gestureData = circle.Progress;
 				string clockwiseness;
+				//whether it is clockwise or not
 				if (circle.Pointable.Direction.AngleTo (circle.Normal) <= Mathf.PI / 4) 
 				{ 
 					clockwiseness = "clockwise";
@@ -142,14 +161,17 @@ public static class LDCLeapControl
 					Debug.Log("Counter Clockwise Circle Gesture");
 				}
 				break;
+				//SWIPE
 			case Gesture.GestureType.TYPESWIPE:
 				SwipeGesture swipe = new SwipeGesture (gesture);
 				Vector3 swipeDirection = new Vector3(0,0,0);
 				swipeDirection = swipe.Direction.ToUnity();
 				gestureData = swipeDirection.x;
+				//swipe direction left or right
 				if (gestureData < 0) { Debug.Log ("Left Swipe Gesture"); }
 				else if (gestureData > 0) { Debug.Log ("Right Swipe Gesture"); }
 				break;
+				//KEY TAP
 			case Gesture.GestureType.TYPEKEYTAP:
 				KeyTapGesture keyTap = new KeyTapGesture (gesture);
 				Vector3 keyTapPosition = new Vector3(0,0,0);
@@ -157,6 +179,7 @@ public static class LDCLeapControl
 				gestureData = keyTapPosition.x;
 				Debug.Log("Key Type Gesture");
 				break;
+				//SCREEN TAP
 			case Gesture.GestureType.TYPESCREENTAP:
 				ScreenTapGesture screenTap = new ScreenTapGesture (gesture);
 				Vector3 screenTapPostion = new Vector3(0,0,0);
@@ -169,5 +192,22 @@ public static class LDCLeapControl
 			}
 		}
 		return gestureData;
+	}
+	
+	private static void touchEmulation()
+	{
+		Update();
+		//retrieve the zone of the foward-most finger
+		Pointable pointable = _frame.Pointables.Frontmost;
+		Pointable.Zone zone = pointable.TouchZone;
+		//The touch distance ranges from +1 to -1 as the finger moves to and through the touch surface
+		TOUCH_DISTANCE = pointable.TouchDistance;
+		//The stabilized Position (in the Leap Motion coordinate system) has a context-sensitive amount of filtering and stabilization
+		Vector stabilizedPosition = pointable.StabilizedTipPosition;
+		//Get the 2D pixel coordinates of a touch point within the window
+		InteractionBox iBox = _frame.InteractionBox;
+		Vector normalizedPosition = iBox.NormalizePoint(stabilizedPosition);
+		TOUCH_POSITION_X = normalizedPosition.x * WINDOW_WIDTH;
+		TOUCH_POSITION_Y = WINDOW_HEIGHT - normalizedPosition.y * WINDOW_HEIGHT;
 	}
 }
